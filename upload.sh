@@ -1,63 +1,46 @@
 #!/bin/bash
 source config.env
 source common.env
+source params.env
 source libs/json.sh
 
-# List of params to filter from the 'ldvs' output
-params=(
-    # battery state
-    "BMS_state"                      # charging or not
-    "BMS_hvState"                    # hv battery state
-    "SOC"                            # battery charge level
+get_params() {
+  local filter="grep -E \"^("
 
-    # battery health
-    "BMS_nominalFullPackEnergy"      # battery capacity (current)
-    "BMS_beginningOfLifePackEnergy"  # battery capacity (from factory)
+  local idx=0
+  for param in "$@"; do
+    filter+="$param"
+    if [ $idx -lt $(($#-1)) ]; then
+      filter+="|"
+    fi
+    idx=$((idx+1))
+  done
 
-    # doors
-    "is_locked"                      # doors are locked or not
+  filter+="),\""
 
-    # car stats
-    "odo"                            # odometer value
-    "speed"                          # current speed
+  # Filter the output of 'ldvs' command and return the filtered lines
+  printf "%s\n" "$($ldvs | eval "$filter")"
+}
 
-    # location
-    "nav_lat"                        # gps latitude
-    "nav_lon"                        # gps longitude
+# decide on a list of params to send
+use_ondemand_params=false
+minute=$(date +%M)
+use_slow_params=$((minute % 5 == 0))
 
-    # tires
-    "last_seen_tpms_pressure_fl"     # tire pressure front left
-    "last_seen_tpms_pressure_fr"     # tire pressure front right
-    "last_seen_tpms_pressure_rl"     # tire pressure rear left
-    "last_seen_tpms_pressure_rr"     # tire pressure rear right
+# if script is ran with --full argument, send all params at once
+if [ "$1" == "--full" ]; then
+  use_ondemand_params=true
+fi
 
-    # climate
-    "VCRIGHT_hvacACRunning"          # AC is on or not
-    "VCRIGHT_hvacPowerState"         # Climate is on or not
-    "VCRIGHT_hvacCabinTempEst"       # Cabin temperature
-    "VCFRONT_tempAmbient"            # Outside temperature
-    "VCRIGHT_hvacBlowerSegment"      # Fan speed
-
-    # charging stats
-    "BMS_acChargerKwhTotal"          # total kWh charged with AC
-    "BMS_dcChargerKwhTotal"          # total kWh charged with DC
-    "BMS_kwhRegenChargeTotal"        # total kWh regenerated
-    "BMS_chgPowerAvailable"          # max charging power available (kWh)
-    "kwh_chg_counter"                # kWh charged since last charge
-)
-
-# Construct the grep command for filtering params
-filter="grep -E \"^("
-for i in "${!params[@]}"; do
-  filter+="${params[$i]}"
-  if [ $i -lt $((${#params[@]}-1)) ]; then
-    filter+="|"
-  fi
-done
-filter+=")\""
-
-# Filter the output of 'ldvs' command and store the filtered lines in a variable
-ldvs_output=$($ldvs | eval "$filter")
+# update different parameters with a different frequency
+params_output=""
+if [ $use_ondemand_params == true ]; then
+  params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}" "${ondemand_params[@]}")
+elif [ $use_slow_params == 1 ]; then
+  params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}")
+else
+  params_output+=$(get_params "${fast_params[@]}")
+fi
 
 # Check if ldvs/grep command exited successfully before proceeding
 if [ $? -ne 0 ]; then
@@ -78,7 +61,7 @@ while IFS=',' read -ra line; do
     json+=", "
   fi
   json+=$(line2json "$key" "$value")
-done <<< "$ldvs_output"
+done <<< "$params_output"
 json+="}"
 
 # Debug print JSON
@@ -86,11 +69,11 @@ if [ "$LOCAL_DEBUG" = 1 ]; then
   echo $json
 fi
 
-# Calculate basic http auth using sha256 hash of vincode+password
-BASIC_AUTH=$(base64 <<< "$VINCODE:$PASSWORD" | awk '{print $1}')
+# Calculate basic http auth using base64 of vincode + sha256(password)
+HASHED_PWD=$(shasum -a 256 <<< "$PASSWORD" | awk '{print $1}' | tr -d "\n")
+BASIC_AUTH=$(echo -n "$VINCODE:$HASHED_PWD" | base64 | tr -d "\n")
 
-# Send the JSON document as a POST request 
-# to the metrics endpoint, appending the VIN code to the URL
+# Send the JSON document as a POST request, to the metrics endpoint
 curl $CURL_OPTS -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Basic $BASIC_AUTH" \
