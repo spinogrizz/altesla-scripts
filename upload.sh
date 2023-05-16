@@ -22,21 +22,14 @@ get_params() {
   printf "%s\n" "$($ldvs | eval "$filter")"
 }
 
-# decide on a list of params to send
-use_ondemand_params=false
-minute=$(date +%M)
-use_slow_params=$((minute % 5 == 0))
-
-# if script is ran with --full argument, send all params at once
-if [ "$1" == "--full" ]; then
-  use_ondemand_params=true
-fi
-
 # update different parameters with a different frequency
 params_output=""
-if [ $use_ondemand_params == true ]; then
-  params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}" "${ondemand_params[@]}")
-elif [ $use_slow_params == 1 ]; then
+hour=$(date +%H)
+minute=$(date +%M)
+
+if [ $hour == "23" ] && [ $minute == "59" ]; then
+  params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}" "${eventual_params[@]}")
+elif [ $((minute % 5)) == 0 ]; then
   params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}")
 else
   params_output+=$(get_params "${fast_params[@]}")
@@ -70,7 +63,7 @@ if [ "$LOCAL_DEBUG" = 1 ]; then
 fi
 
 # Calculate basic http auth using base64 of vincode + sha256(password)
-HASHED_PWD=$(shasum -a 256 <<< "$PASSWORD" | awk '{print $1}' | tr -d "\n")
+HASHED_PWD=$(printf "%s" "$PASSWORD" | shasum -a 256 | awk '{print $1}')
 BASIC_AUTH=$(echo -n "$VINCODE:$HASHED_PWD" | base64 | tr -d "\n")
 
 # Send the JSON document as a POST request, to the metrics endpoint
