@@ -32,11 +32,10 @@ execute_command() {
     # Prepare the arguments and execute the command
     case "${command_name}" in
         "door_lock")
-            if [[ "$argument" == "1" ]]; then
-                request "door_lock"
-            elif [[ "$argument" == "0" ]]; then
-                request "door_unlock"
-            fi
+            local CMD="lock"
+            [[ "$argument" == "1" ]] && CMD="lock" || CMD="unlock"
+
+            request "door_${CMD}"
             ;;
 
         "sentry")
@@ -80,13 +79,13 @@ execute_command() {
             ;;
 
         "frunk")
-            curl "actuate_trunk?which_trunk=front"
+            request "actuate_trunk?which_trunk=front"
             ;;
         
         *)
             # all other commands:
             # honk_horn, flash_lights, remote_start_drive, etc...
-            curl "${command_name}"
+            request "${command_name}"
             ;;
     esac
 }
@@ -121,17 +120,17 @@ while (( $(remaining_run_time) > 0 )); do
         argument="${cmd_parts[2]}"
         received_hash="${cmd_parts[3]}"
 
-        # Calculate the expected hash
+        # Calculate the expected security hash
         expected_hash=$(echo -n "${uuid}${PASSWORD}" | ${SHA256CMD} | awk '{ print $1 }')
 
-        # Check if the received hash matches the expected hash
+        # Authorize the command request by comparing hashesh
         if [ "${received_hash}" != "${expected_hash}" ]; then
             continue
         fi
 
-        # Execute the command        
+        # Execute the command and send a POST request
+        #  to confirm tha command was accepted
         if execute_command "${command_name}" "${argument}"; then
-            # Send a POST request to the API with the UUID appended to the URL
             curl -s -X POST \
                  -H "Authorization: Basic $BASIC_AUTH" \
                  "${COMMAND_ENDPOINT}/${uuid}"
