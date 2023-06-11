@@ -1,8 +1,35 @@
 #!/bin/bash
+
+# configuration
 source config.env
-source common.env
 source params.env
+
+# common code
 source libs/json.sh
+source common.sh
+
+START_TIME=$(date +%s)
+
+# Function to cleanup on script exit
+cleanup() {
+    # Remove lockfile
+    rm -f ${LOCKFILE}
+    
+    # Calculate the remaining time and sleep the rest of the interval
+    TIME_REMAINING=$(remaining_run_time)
+    if (( TIME_REMAINING > 0 )); then
+        sleep $TIME_REMAINING
+    fi
+}
+
+remaining_run_time() {
+    END=$(date +%s)
+    DIFF=$(( $INTERVAL - $END + $START ))
+    echo $DIFF
+}
+
+# Trap any form of script exit
+trap cleanup EXIT
 
 get_params() {
   local filter="grep -E \"^("
@@ -62,16 +89,10 @@ if [ "$LOCAL_DEBUG" = 1 ]; then
   echo $json
 fi
 
-# Calculate basic http auth using base64 of vincode + sha256(password)
-HASHED_PWD=$(printf "%s" "$PASSWORD" | shasum -a 256 | awk '{print $1}')
-BASIC_AUTH=$(echo -n "$VINCODE:$HASHED_PWD" | base64 | tr -d "\n")
-
 # Send the JSON document as a POST request, to the metrics endpoint
 curl $CURL_OPTS -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Basic $BASIC_AUTH" \
      -d "$json" \
      $METRICS_ENDPOINT
-
-
 
