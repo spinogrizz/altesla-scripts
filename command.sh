@@ -1,50 +1,41 @@
 #!/bin/bash
 
+### SEND METRICS TO THE API ###
+### DO NOT MODIFY THIS FILE ###
+
 # configuration
 source config.env
 source params.env
 
 # common code
-source libs/json.sh
 source common.sh
 
+COMMAND_ENDPOINT=${BASE_API}/commands
 
 # TODO: replace it with the argument
 remaining_run_time=60
 
-# Check if lockfile exists
-if [ -e "${LOCKFILE}" ]; then
-  echo "Lockfile exists, script is already running."
-  exit 1
-else
-  touch "${LOCKFILE}"
-fi
-
-cleanup() {
-    # Remove lockfile
-    rm -f ${LOCKFILE}
-}
-
-# Trap any form of script exit
-trap cleanup EXIT
-
 execute_command() {
-  local command_name="$1"
-  local argument="$2"
+    local command_name="$1"
+    local argument="$2"
 
-  case "${command_name}" in
-    "door_lock")
-      echo "door lock command: ${argument}"
-      ;;
-    "test2")
-      # Execute command2 with the argument
-      echo "test2 command: ${argument}"
-      ;;
-    *)
-      echo "Unknown command received: ${command_name}"
-      return 1
-      ;;
-  esac
+    # Debug print JSON
+    if [ "$LOCAL_DEBUG" = 1 ]; then
+        echo "command: ${command_name}, argument: ${argument}"
+    fi
+
+    case "${command_name}" in
+        "door_lock")
+            #echo "door lock command: ${argument}"
+            ;;
+        "set_charging_limit")
+            curl "http://localhost:7654/set_charge_limit?percent=${argument}"
+            ;;
+        *)
+            echo "Unknown command received: ${command_name}"
+            return 1
+            ;;
+    esac
 }
 
 command=$(curl $CURL_OPTS \
