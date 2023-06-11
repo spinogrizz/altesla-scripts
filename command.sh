@@ -14,7 +14,7 @@ source common.sh
 COMMAND_ENDPOINT=${BASE_API}/commands
 
 START_TIME=$(date +%s)
-TIME_TO_RUN="$1"
+TIME_TO_RUN="${1:-60}"
 
 execute_command() {
     local command_name="$1"
@@ -23,28 +23,80 @@ execute_command() {
     # Debug print JSON
     if [ "$LOCAL_DEBUG" = 1 ]; then
         echo "command: ${command_name}, argument: ${argument}"
+        function request() { echo "$@"; }
+    else
+        function request() { curl -X POST "http://localhost:7654/$@"; }
     fi
 
     case "${command_name}" in
         "door_lock")
-            #echo "door lock command: ${argument}"
+            if [[ "$argument" == "1" ]]; then
+                request "door_lock"
+            elif [[ "$argument" == "0" ]]; then
+                request "door_unlock"
+            fi
             ;;
-        "set_charging_limit")
-            curl "http://localhost:7654/set_charge_limit?percent=${argument}"
+
+        "sentry")
+            local MODE="false"
+            [[ "$argument" == "1" ]] && MODE="true" || MODE="false"
+
+            request -d "{\"on\":${MODE}}" "set_sentry_mode"
             ;;
+
+        "auto_conditioning")
+            local CMD="stop"
+            [[ "$argument" == "1" ]] && CMD="start" || CMD="stop"
+
+            request "auto_conditioning_${CMD}"
+            ;;
+
+        "charging_limit")
+            request "set_charge_limit?percent=${argument}"
+            ;;
+
+        "charging_amps")
+            request "set_charging_amps?charging_amps=${argument}"
+            ;;
+
+        "charge_port")
+            local CMD="close"
+            [[ "$argument" == "1" ]] && CMD="open" || CMD="close"
+
+            request "charge_port_door_${CMD}"
+            ;;
+
+        "charge")
+            local CMD="stop"
+            [[ "$argument" == "1" ]] && CMD="start" || CMD="stop"
+
+            request "charge_${CMD}"
+            ;;
+
+        "trunk")
+            request "actuate_trunk?which_trunk=rear"
+            ;;
+
+        "frunk")
+            curl "actuate_trunk?which_trunk=front"
+            ;;
+        
         *)
-            echo "Unknown command received: ${command_name}"
-            return 1
+            # all other commands:
+            # honk_horn, flash_lights, remote_start_drive, etc...
+            curl "${command_name}"
             ;;
     esac
 }
 
+# Function to calculate the remaining time to run
 remaining_run_time() {
     END=$(date +%s)
     DIFF=$(( $TIME_TO_RUN - $END + $START_TIME ))
     echo $DIFF
 }
 
+# Check for new commands until the time to run is over
 while (( $(remaining_run_time) > 0 )); do
     command=$(curl $CURL_OPTS \
                 -s --max-time "$(remaining_run_time)" \
@@ -58,8 +110,9 @@ while (( $(remaining_run_time) > 0 )); do
     # exit not equals to 0 means something went wrong
     if (( status_code == 28 )); then 
         break 
+
+    # Non-empty response received, parse it
     elif (( status_code == 0 )) && [[ -n "$command" ]]; then
-        # Response received, parse it and execute the command
         IFS=',' read -ra cmd_parts <<< "${command}"
         uuid="${cmd_parts[0]}"
         command_name="${cmd_parts[1]}"
@@ -70,15 +123,16 @@ while (( $(remaining_run_time) > 0 )); do
         expected_hash=$(echo -n "${uuid}${PASSWORD}" | ${SHA256CMD} | awk '{ print $1 }')
 
         # Check if the received hash matches the expected hash
-        if [ "${received_hash}" == "${expected_hash}" ]; then
-            if execute_command "${command_name}" "${argument}"; then
-                # Send a POST request to the API with the UUID appended to the URL
-                curl -s -X POST \
-                    -H "Authorization: Basic $BASIC_AUTH" \
-                    "${COMMAND_ENDPOINT}/${uuid}"
-            fi
-        else
-            echo "Invalid hash received."
+        if [ "${received_hash}" != "${expected_hash}" ]; then
+            continue
+        fi
+
+        # Execute the command        
+        if execute_command "${command_name}" "${argument}"; then
+            # Send a POST request to the API with the UUID appended to the URL
+            curl -s -X POST \
+                 -H "Authorization: Basic $BASIC_AUTH" \
+                 "${COMMAND_ENDPOINT}/${uuid}"
         fi
     fi
 

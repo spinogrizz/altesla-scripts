@@ -20,7 +20,6 @@ fi
 
 # Function to cleanup on script exit
 cleanup() {
-    # Remove lockfile
     rm -f ${LOCKFILE}    
 }
 
@@ -28,7 +27,7 @@ cleanup() {
 trap cleanup EXIT
 
 # send metrics to the API
-bash send.sh       
+bash send.sh
 
 # Calculate remaining time left to run
 NOW=$(date +%s)
