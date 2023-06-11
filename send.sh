@@ -3,11 +3,11 @@
 ### SEND METRICS TO THE API ###
 ### DO NOT MODIFY THIS FILE ###
 
-# configuration
+# Configuration
 source config.env
 source params.env
 
-# common code
+# Common code
 source common.sh
 
 METRICS_ENDPOINT=${BASE_API}/metrics
@@ -111,3 +111,4 @@ curl $CURL_OPTS -X POST \
      -H "Authorization: Basic $BASIC_AUTH" \
      -d "$json" \
      $METRICS_ENDPOINT
+

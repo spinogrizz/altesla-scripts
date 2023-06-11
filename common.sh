@@ -5,11 +5,15 @@ if [ "$LOCAL_DEBUG" = 1 ]; then
 
   BASE_API=http://localhost:3000
 
-  CURL_OPTS="-vvvv"
-  SHA256CMD="shasum -a 256" # macOS compatible
+  CURL_OPTS="-v"
 else
   ldvs="ldvs"
   VINCODE=$(cat /var/etc/vin)
+fi
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  SHA256CMD="shasum -a 256" # macOS compatible
+else 
   SHA256="sha256sum"
 fi
 
