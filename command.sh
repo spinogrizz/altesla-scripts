@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### SEND METRICS TO THE API ###
+### RECEIVE COMMAND FROM THE API ###
 ### DO NOT MODIFY THIS FILE ###
 
 # Configuration
@@ -13,6 +13,7 @@ source common.sh
 # Set API endpoint
 COMMAND_ENDPOINT=${BASE_API}/commands
 
+# Remember the script startup time
 START_TIME=$(date +%s)
 TIME_TO_RUN="${1:-60}"
 
@@ -20,7 +21,7 @@ execute_command() {
     local command_name="$1"
     local argument="$2"
 
-    # Debug print JSON
+    # Debug print 
     if [ "$LOCAL_DEBUG" = 1 ]; then
         echo "command: ${command_name}, argument: ${argument}"
         function request() { echo "$@"; }
@@ -28,6 +29,7 @@ execute_command() {
         function request() { curl -X POST "http://localhost:7654/$@"; }
     fi
 
+    # Prepare the arguments and execute the command
     case "${command_name}" in
         "door_lock")
             if [[ "$argument" == "1" ]]; then
