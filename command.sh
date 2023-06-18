@@ -121,7 +121,7 @@ while (( $(remaining_run_time) > 0 )); do
         received_hash="${cmd_parts[3]}"
 
         # Calculate the expected security hash
-        expected_hash=$(echo -n "${uuid}${PASSWORD}" | ${SHA256CMD} | awk '{ print $1 }')
+        expected_hash=$(echo -n "${uuid}${command_name}${argument}${PASSWORD}" | ${SHA256CMD} | awk '{ print $1 }')
 
         # Authorize the command request by comparing hashesh
         if [ "${received_hash}" != "${expected_hash}" ]; then

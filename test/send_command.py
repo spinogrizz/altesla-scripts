@@ -30,7 +30,7 @@ cmd = args.command
 arg = args.argument
 
 # 6. Key
-key_object = hashlib.sha256(f"{uuid}{PASSWORD}".encode('utf-8'))
+key_object = hashlib.sha256(f"{uuid}{cmd}{arg}{PASSWORD}".encode('utf-8'))
 key = key_object.hexdigest()
 
 # Construct JSON payload
