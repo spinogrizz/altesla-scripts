@@ -25,24 +25,23 @@ execute_command() {
     if [ "$LOCAL_DEBUG" = 1 ]; then
         echo "command: ${command_name}, argument: ${argument}"
         function request() { echo "$@"; }
+        function set_dv()  { echo "$@"; }
     else
-        function request() { curl -X POST "http://localhost:7654/$@"; }
+        function request() { curl "http://localhost:7654/$@"; }
+        function set_dv()  { sdv $1 $2; }
     fi
 
     # Prepare the arguments and execute the command
     case "${command_name}" in
-        "door_lock")
-            local CMD="lock"
-            [[ "$argument" == "1" ]] && CMD="lock" || CMD="unlock"
+        "door_lock") 
+            local CMD="2"
+            [[ "$argument" == "1" ]] && ARG="1" || ARG="2"
 
-            request "door_${CMD}"
+            set_dv GUI_lockRequest $ARG
             ;;
 
         "sentry")
-            local MODE="false"
-            [[ "$argument" == "1" ]] && MODE="true" || MODE="false"
-
-            request -d "{\"on\":${MODE}}" "set_sentry_mode"
+            request "set_sentry_mode?on=${argument}" 
             ;;
 
         "auto_conditioning")
@@ -56,18 +55,16 @@ execute_command() {
             request "set_charge_limit?percent=${argument}"
             ;;
 
-        "charging_amps")
-            request "set_charging_amps?charging_amps=${argument}"
+        "charging_amps") 
+            set_dv GUI_chargeCurrentRequest $argument
             ;;
 
-        "charge_port")
-            local CMD="close"
-            [[ "$argument" == "1" ]] && CMD="open" || CMD="close"
+        "charge_port") 
 
-            request "charge_port_door_${CMD}"
+            set_dv GUI_chargePortDoorRequest true
             ;;
 
-        "charge")
+        "charge") 
             local CMD="stop"
             [[ "$argument" == "1" ]] && CMD="start" || CMD="stop"
 
@@ -75,17 +72,15 @@ execute_command() {
             ;;
 
         "trunk")
-            request "actuate_trunk?which_trunk=rear"
+            set_dv GUI_rearTrunkRequest 1
             ;;
 
         "frunk")
-            request "actuate_trunk?which_trunk=front"
+            set_dv GUI_frontTrunkRequest 1
             ;;
         
         *)
-            # all other commands:
-            # honk_horn, flash_lights, remote_start_drive, etc...
-            request "${command_name}"
+            echo "Unknown command: ${command_name}"
             ;;
     esac
 }
