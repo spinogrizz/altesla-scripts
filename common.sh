@@ -14,7 +14,7 @@ fi
 if [[ "$(uname)" == "Darwin" ]]; then
   SHA256CMD="shasum -a 256" # macOS compatible
 else 
-  SHA256="sha256sum"
+  SHA256CMD="sha256sum"
 fi
 
 # Calculate basic http auth using base64 of vincode + sha256(password)
