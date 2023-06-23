@@ -106,7 +106,7 @@ if [ "$LOCAL_DEBUG" = 1 ]; then
 fi
 
 # Send the JSON document as a POST request, to the metrics endpoint
-curl $CURL_OPTS -X POST \
+curl $CURL_OPTS \
      -H "Content-Type: application/json" \
      -H "Authorization: Basic $BASIC_AUTH" \
      -d "$json" \
