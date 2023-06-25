@@ -89,6 +89,15 @@ execute_command() {
             update DOOR_frontTrunkLatch
             ;;
         
+        "set_dv")
+            IFS='/' read -ra parts <<< "${argument}"
+            local dv="${parts[0]}"
+            local val="${parts[1]}"
+
+            set_dv $dv $val
+            update $dv
+            ;;
+
         *)
             echo "Unknown command: ${command_name}"
             ;;
