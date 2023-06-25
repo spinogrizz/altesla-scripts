@@ -65,8 +65,12 @@ params_output=""
 hour=$(date +%H)
 minute=$(date +%M)
 
+# Check if launched with argument, then send for only that parameter
+if [ $# -eq 1 ]; then
+  params_output+=$(get_params "$1")
+
 # Check if the current time is 23:59, if so, send all parameters
-if [ $hour == "23" ] && [ $minute == "59" ]; then
+elif [ $hour == "23" ] && [ $minute == "59" ]; then
   params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}" "${eventual_params[@]}")
 
 # Send partial parameters based every 5 minutes

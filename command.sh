@@ -31,6 +31,8 @@ execute_command() {
         function set_dv()  { sdv $1 $2; }
     fi
 
+    function update()  { sleep 1; bash send.sh $1; }
+
     # Prepare the arguments and execute the command
     case "${command_name}" in
         "door_lock") 
@@ -38,10 +40,12 @@ execute_command() {
             [[ "$argument" == "1" ]] && ARG="1" || ARG="2"
 
             set_dv GUI_lockRequest $ARG
+            update VAPI_isLocked
             ;;
 
         "sentry")
             request "set_sentry_mode?on=${argument}" 
+            update GUI_sentryModeState
             ;;
 
         "auto_conditioning")
@@ -49,19 +53,22 @@ execute_command() {
             [[ "$argument" == "1" ]] && CMD="start" || CMD="stop"
 
             request "auto_conditioning_${CMD}"
+            update HVAC_aconStatus
             ;;
 
         "charging_limit")
             request "set_charge_limit?percent=${argument}"
+            update GUI_chargeLimitRequest
             ;;
 
         "charging_amps") 
             set_dv GUI_chargeCurrentRequest $argument
+            update GUI_chargeCurrentRequest
             ;;
 
         "charge_port") 
-
             set_dv GUI_chargePortDoorRequest true
+            update VAPI_chargePortDoor
             ;;
 
         "charge") 
@@ -69,14 +76,17 @@ execute_command() {
             [[ "$argument" == "1" ]] && CMD="start" || CMD="stop"
 
             request "charge_${CMD}"
+            update VAPI_isCharging
             ;;
 
         "trunk")
             set_dv GUI_rearTrunkRequest 1
+            update DOOR_rearTrunkLatch
             ;;
 
         "frunk")
             set_dv GUI_frontTrunkRequest 1
+            update DOOR_frontTrunkLatch
             ;;
         
         *)
