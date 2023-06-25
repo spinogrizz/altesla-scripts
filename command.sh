@@ -31,12 +31,13 @@ execute_command() {
         function set_dv()  { sdv $1 $2; }
     fi
 
+    # Send updated value of specific metric to the server
     function update()  { sleep 1; bash send.sh $1; }
 
     # Prepare the arguments and execute the command
     case "${command_name}" in
         "door_lock") 
-            local CMD="2"
+            local ARG="2"
             [[ "$argument" == "1" ]] && ARG="1" || ARG="2"
 
             set_dv GUI_lockRequest $ARG
@@ -89,6 +90,8 @@ execute_command() {
             update DOOR_frontTrunkLatch
             ;;
         
+        # Set the value of a specific metric
+        # argument format is "dv_name/dv_value"
         "set_dv")
             IFS='/' read -ra parts <<< "${argument}"
             local dv="${parts[0]}"
