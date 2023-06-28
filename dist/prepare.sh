@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PRIVATE_KEY="dist/altesla_private.pem"
+PRIVATE_KEY="dist/sign.pem"
 FILES=("command.sh" "send.sh" "params.env" "common.sh")
 TAR_FILE="update.tar"
 SIG_FILE="update.tar.sig"
