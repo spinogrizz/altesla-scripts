@@ -12,7 +12,7 @@ source config.env
 source common.sh
 
 # URLs and headers
-UPDATE_URL="${BASE_API}/update"
+UPDATE_URL="${BASE_API}/update/${UPDATES_BRANCH}"
 METRICS_ENDPOINT=${BASE_API}/metrics
 AUTH="Authorization: Basic $BASIC_AUTH"
 

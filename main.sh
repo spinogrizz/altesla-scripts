@@ -35,3 +35,8 @@ REMAINING_TIME=$(( $INTERVAL - $NOW + $START_TIME ))
 
 # wait and execute commands from the API
 bash command.sh $REMAINING_TIME
+
+# check for OTA updates, if enabled
+if [ "$OTA_UPDATES" = 1 ]; then
+  bash update.sh
+fi
