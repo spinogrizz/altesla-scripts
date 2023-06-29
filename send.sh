@@ -74,7 +74,7 @@ elif [ $hour == "23" ] && [ $minute == "59" ]; then
   params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}" "${eventual_params[@]}")
 
 # Send partial parameters based every 5 minutes
-elif [ $((minute % 5)) == 0 ]; then
+elif [ $((10#$minute % 5)) -eq 0 ]; then
   params_output+=$(get_params "${fast_params[@]}" "${slow_params[@]}")
 
 # Send only frequently changed parameters every minute
