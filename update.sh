@@ -22,9 +22,8 @@ SIG_FILE="update.tar.sig"
 VERSION_FILE="version"
 TMP_DIR="tmp"
 
-# Function to cleanup on script exit
+# Function to remove downloaded files on script exit
 cleanup() {
-    # Remove downloaded files
     rm -rf $TMP_DIR 
 }
 
@@ -60,7 +59,7 @@ if (( UPDATE_VERSION > CURRENT_VERSION )); then
         # Update the version file
         echo $UPDATE_VERSION > $VERSION_FILE
 
-        # Send the JSON document as a POST request, to the metrics endpoint
+        # Send the new version to the metrics endpoint
         curl $CURL_OPTS \
             -H "Content-Type: application/json" \
             -H "Authorization: Basic $BASIC_AUTH" \
