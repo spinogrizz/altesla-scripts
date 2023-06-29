@@ -26,12 +26,17 @@ cleanup() {
 # Trap any form of script exit
 trap cleanup EXIT
 
-# send metrics to the API
+# Send metrics to the API
 bash send.sh
 
 # Calculate remaining time left to run
 NOW=$(date +%s)
 REMAINING_TIME=$(( $INTERVAL - $NOW + $START_TIME ))
 
-# wait and execute commands from the API
+# Wait and execute commands from the API
 bash command.sh $REMAINING_TIME
+
+# Check for OTA updates, if enabled
+if [ "$OTA_UPDATES" = 1 ]; then
+  bash update.sh
+fi

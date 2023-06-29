@@ -101,6 +101,10 @@ execute_command() {
             update $dv
             ;;
 
+        # Forced OTA update
+        "update")
+            bash update.sh -f
+
         *)
             echo "Unknown command: ${command_name}"
             ;;
