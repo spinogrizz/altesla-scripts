@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PRIVATE_KEY="dist/sign.pem"
-FILES=("command.sh" "send.sh" "params.env" "common.sh")
+FILES=("command.sh" "send.sh" "common.sh" "version" "params.env" "config.env.example")
 TAR_FILE="update.tar"
 SIG_FILE="update.tar.sig"
 
