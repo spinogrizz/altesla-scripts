@@ -2,3 +2,5 @@
 
 dist/sign.pem
 dist/*tar*
+
+config.env
