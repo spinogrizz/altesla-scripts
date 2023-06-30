@@ -16,7 +16,7 @@ function ask_user() {
     while true; do read -p "${1} (y/n) " yn </dev/tty; case $yn in
         [Yy]* ) echo 1; return;;
         [Nn]* ) echo 0; return;;
-        * ) echo "Answer Y or N.";
+        * ) echo "Answer Y or N."
     esac; done
 }
 
@@ -28,7 +28,7 @@ if [[ $(uname) != "Darwin" ]]; then
 else
     # Fix macOS testing environment
     SED_CMD="sed -i \"\""
-    TOTAL=$((TOTAL-1));
+    TOTAL=$((TOTAL-1))
 fi
 
 echo $SED_CMD
@@ -57,7 +57,6 @@ while true; do
         echo -e "${RD}Passwords do not match. Please try again.${NC}"
     fi
 done
-
 
 # OTA_UPDATES
 answer=$(ask_user "Do you wish to enable automatic OTA updates?")
@@ -93,7 +92,7 @@ if [[ $answer == 1 ]]; then
     bash send.sh -f || { echo_error "Failed to send metrics to the server"; }
     echo ""
 else
-    TOTAL=$((TOTAL-1));
+    TOTAL=$((TOTAL-1))
 fi
 
 # Output the final instruction to the user
