@@ -5,28 +5,33 @@ INSTALLER_URL="install.altesla.app"
 INSTALL_DIR="/home/.altesla"
 
 GR='\033[1;32m'; RD='\033[1;31m'; NC='\033[0m'
-STEP=1; TOTAL=7
+STEP=1; TOTAL=8
+
+SED_CMD="sed -i"
 
 function echo_step { echo -e "${GR}[$STEP/$TOTAL]${NC} $1"; STEP=$((STEP+1)); }
 function echo_error { echo -e "${RD}Error: $1${NC}"; exit 1; }
 function read_input { read -p "- $1: " input </dev/tty; echo $input; }
 function ask_user() { 
-    while true; do read -p "${1} (y/n) " yn; case $yn in
+    while true; do read -p "${1} (y/n) " yn </dev/tty; case $yn in
         [Yy]* ) echo 1; return;;
         [Nn]* ) echo 0; return;;
         * ) echo "Answer Y or N.";
     esac; done
 }
 
-# Choose the sed command based on the OS (macOS is weird)
-[[ $(uname) == "Darwin" ]] && SED_CMD="sed -i \"\"" || SED_CMD="sed -i"
-
 # Creating installation directory (only on Linux)
 if [[ $(uname) != "Darwin" ]]; then
     echo_step "Creating installation ${INSTALL_DIR} directory..."
     mkdir -p ${INSTALL_DIR} || { echo_error "Failed to create ${INSTALL_DIR}"; }
     cd ${INSTALL_DIR}
+else
+    # Fix macOS testing environment
+    SED_CMD="sed -i \"\""
+    TOTAL=$((TOTAL-1));
 fi
+
+echo $SED_CMD
 
 # Download the package
 echo_step "Downloading the package..."
@@ -86,11 +91,10 @@ answer=$(ask_user "Do you wish to run the test script now?")
 if [[ $answer == 1 ]]; then
     echo_step "Running send.sh script to test connectivity..."
     bash send.sh -f || { echo_error "Failed to send metrics to the server"; }
+    echo ""
 else
     TOTAL=$((TOTAL-1));
 fi
-
-echo ""
 
 # Output the final instruction to the user
 echo_step "Installation completed. Please read the following: "
