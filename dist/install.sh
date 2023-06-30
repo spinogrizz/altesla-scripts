@@ -2,6 +2,7 @@
 
 INSTALL_FILE="install.tar"
 INSTALLER_URL="install.altesla.app"
+INSTALL_DIR="/home/.altesla"
 
 GR='\033[1;32m'; RD='\033[1;31m'; NC='\033[0m'
 STEP=1; TOTAL=7
@@ -9,9 +10,23 @@ STEP=1; TOTAL=7
 function echo_step { echo -e "${GR}[$STEP/$TOTAL]${NC} $1"; STEP=$((STEP+1)); }
 function echo_error { echo -e "${RD}Error: $1${NC}"; exit 1; }
 function read_input { read -p "- $1: " input </dev/tty; echo $input; }
+function ask_user() { 
+    while true; do read -p "${1} (y/n) " yn; case $yn in
+        [Yy]* ) echo 1; return;;
+        [Nn]* ) echo 0; return;;
+        * ) echo "Answer Y or N.";
+    esac; done
+}
 
 # Choose the sed command based on the OS (macOS is weird)
 [[ $(uname) == "Darwin" ]] && SED_CMD="sed -i \"\"" || SED_CMD="sed -i"
+
+# Creating installation directory (only on Linux)
+if [[ $(uname) != "Darwin" ]]; then
+    echo_step "Creating installation ${INSTALL_DIR} directory..."
+    mkdir -p ${INSTALL_DIR} || { echo_error "Failed to create ${INSTALL_DIR}"; }
+    cd ${INSTALL_DIR}
+fi
 
 # Download the package
 echo_step "Downloading the package..."
@@ -26,18 +41,22 @@ echo_step "Creating config.env file..."
 cp config.env.example config.env
 
 # PASSWORD
-password=$(read_input "Enter the password for the car")
-eval $SED_CMD "s~^PASSWORD=.*~PASSWORD=\"$password\"~g" config.env
+#password=$(read_input "Enter the password for the car")
+while true; do
+    password1=$(read_input "Create new password for accessing the car")
+    password2=$(read_input "Confirm new password")
+    if [[ $password1 == $password2 ]]; then
+        eval $SED_CMD "s~^PASSWORD=.*~PASSWORD=\"$password1\"~g" config.env
+        break
+    else
+        echo -e "${RD}Passwords do not match. Please try again.${NC}"
+    fi
+done
+
 
 # OTA_UPDATES
-while true; do
-    yn=$(read_input "Do you wish to enable automatic OTA updates? (y/n) ")
-    case $yn in
-        [Yy]* ) eval $SED_CMD "s~^OTA_UPDATES=.*~OTA_UPDATES=1~g" config.env; break;;
-        [Nn]* ) eval $SED_CMD "s~^OTA_UPDATES=.*~OTA_UPDATES=0~g" config.env; break;;
-        * ) echo "Please answer yes (Y) or no (N).";;
-    esac
-done
+answer=$(ask_user "Do you wish to enable automatic OTA updates?")
+eval $SED_CMD "s~^OTA_UPDATES=.*~OTA_UPDATES=$answer~g" config.env
 
 # INTERVAL
 while true; do
@@ -63,8 +82,13 @@ echo_step "Cleaning up..."
 rm $INSTALL_FILE
 
 # Run the send metrics script to test the configuration
-echo_step "Running send.sh script to test connectivity..."
-bash send.sh -f || { echo_error "Failed to send metrics to the server"; }
+answer=$(ask_user "Do you wish to run the test script now?")
+if [[ $answer == 1 ]]; then
+    echo_step "Running send.sh script to test connectivity..."
+    bash send.sh -f || { echo_error "Failed to send metrics to the server"; }
+else
+    TOTAL=$((TOTAL-1));
+fi
 
 echo ""
 
@@ -73,9 +97,10 @@ echo_step "Installation completed. Please read the following: "
 
 cat << EOF
     1. You may edit config.env file to access advanced settings.
-    2. Run ./main.sh to check that script runs and doesn't crash.
-    3. Open up https://api.altesla.app/check/VIN to see that metrics were received.
-    4. Add ./main.sh to crontab to run it every minute
+    2. Run ./main.sh to check that script runs, sleeps for ${interval} seconds.
+    3. Open up https://api.altesla.app/check/$(cat /var/etc/vin)
+    4. Check that webpage flashes green every ${interval} seconds or when ./send.sh is run.
+    5. Add ./main.sh to crontab to run it every minute
     
     If you are using poorcron.sh implementation, add following line to the loop,
     and remove "sleep 60" line, as it is not needed anymore:
