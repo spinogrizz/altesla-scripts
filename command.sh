@@ -41,6 +41,7 @@ execute_command() {
             [[ "$argument" == "1" ]] && ARG="1" || ARG="2"
 
             set_dv GUI_lockRequest $ARG
+            set_dv GUI_headLightFlashRequest 1
             update VAPI_isLocked
             ;;
 
@@ -104,6 +105,7 @@ execute_command() {
         # Forced OTA update
         "update")
             bash update.sh -f
+            ;;
 
         *)
             echo "Unknown command: ${command_name}"
