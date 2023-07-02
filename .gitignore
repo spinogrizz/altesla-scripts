@@ -2,5 +2,6 @@
 
 dist/sign.pem
 dist/*tar*
+test/ldvs*
 
 config.env
