@@ -59,6 +59,9 @@ if (( UPDATE_VERSION > CURRENT_VERSION )); then
         # Update the version file
         echo $UPDATE_VERSION > $VERSION_FILE
 
+        # Make the scripts executable
+        chmod +x *.sh
+
         # Send the new version to the metrics endpoint
         curl $CURL_OPTS \
             -H "Content-Type: application/json" \

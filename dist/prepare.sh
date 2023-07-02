@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PRIVATE_KEY="dist/sign.pem"
-FILES=("command.sh" "send.sh" "common.sh" "version" "params.env" "config.env.example")
+FILES=("version" "main.sh" "command.sh" "send.sh" "common.sh" "update.sh" "update.pub.pem" "params.env" "config.env.example")
 TAR_FILE="update.tar"
 SIG_FILE="update.tar.sig"
 
@@ -9,7 +9,7 @@ SIG_FILE="update.tar.sig"
 cd ..
 
 # Create a tarball of the files
-tar -cvf $TAR_FILE "${FILES[@]}"
+tar --exclude='._*' -cvf $TAR_FILE "${FILES[@]}"
 
 # Sign the tarball using the private key
 openssl dgst -sha256 -sign $PRIVATE_KEY -out $SIG_FILE $TAR_FILE
